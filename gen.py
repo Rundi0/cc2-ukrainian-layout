@@ -150,6 +150,71 @@ LAYOUT\t\t;an extra '@' at the end is a dead key
 """
 
 KLC_TAIL = """
+KEYNAME
+
+01\tEsc
+0e\tBackspace
+0f\tTab
+1c\tEnter
+1d\tCtrl
+2a\tShift
+36\t"Right Shift"
+37\t"Num *"
+38\tAlt
+39\tSpace
+3a\t"Caps Lock"
+3b\tF1
+3c\tF2
+3d\tF3
+3e\tF4
+3f\tF5
+40\tF6
+41\tF7
+42\tF8
+43\tF9
+44\tF10
+45\tPause
+46\t"Scroll Lock"
+47\t"Num 7"
+48\t"Num 8"
+49\t"Num 9"
+4a\t"Num -"
+4b\t"Num 4"
+4c\t"Num 5"
+4d\t"Num 6"
+4e\t"Num +"
+4f\t"Num 1"
+50\t"Num 2"
+51\t"Num 3"
+52\t"Num 0"
+53\t"Num Del"
+54\t"Sys Req"
+57\tF11
+58\tF12
+
+KEYNAME_EXT
+
+1c\t"Num Enter"
+1d\t"Right Ctrl"
+35\t"Num /"
+37\t"Prnt Scrn"
+38\t"Right Alt"
+45\t"Num Lock"
+46\tBreak
+47\tHome
+48\tUp
+49\t"Page Up"
+4b\tLeft
+4d\tRight
+4f\tEnd
+50\tDown
+51\t"Page Down"
+52\tInsert
+53\tDelete
+5b\t"Left Windows"
+5c\t"Right Windows"
+5d\tApplication
+
 DESCRIPTIONS
 
 0422\t{name}
@@ -275,7 +340,11 @@ if __name__ == '__main__':
     for fn, txt in [('ua_cc', xkb()), ('ua_cc.klc', klc()),
                     ('ua_cc.keylayout', keylayout()), ('ua_cc.kcm', kcm())]:
         p = OUT / fn
-        p.write_bytes(txt.encode('utf-8'))
+        # MSKLC writes and expects .klc as UTF-16LE with a BOM
+        p.write_bytes(txt.encode('utf-16-le' if fn.endswith('.klc')
+                                 else 'utf-8'))
+        if fn.endswith('.klc'):
+            p.write_bytes(b'\xff\xfe' + p.read_bytes())
         print('%-22s %5d bytes' % (p.name, p.stat().st_size))
     raw = OUT.parent / 'android/app/src/main/res/raw/ua_cc.kcm'
     if raw.parent.is_dir():
