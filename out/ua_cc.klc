@@ -1,0 +1,78 @@
+KBD	uacc	"Ukrainian (CharaChorder Two)"
+
+COPYRIGHT	"(c) 2026"
+COMPANY	"-"
+LOCALENAME	"uk-UA"
+LOCALEID	"00000422"
+VERSION	1.0
+SHIFTSTATE
+
+0	//Column 4 : base
+1	//Column 5 : Shift
+6	//Column 6 : Ctrl+Alt (AltGr)
+7	//Column 7 : Shift+Ctrl+Alt
+
+LAYOUT		;an extra '@' at the end is a dead key
+
+//SC	VK_		Cap	0	1	6	7
+//--	----		----	----	----	----	----
+
+29	OEM_3		1	0491	0490	0060	007e	// Backquote
+02	1		0	0031	0021	-1	-1	// Digit1
+03	2		0	0032	0040	-1	-1	// Digit2
+04	3		0	0033	0023	-1	-1	// Digit3
+05	4		0	0034	0024	-1	-1	// Digit4
+06	5		0	0035	0025	-1	-1	// Digit5
+07	6		0	0036	005e	-1	-1	// Digit6
+08	7		0	0037	0026	-1	-1	// Digit7
+09	8		0	0038	002a	-1	-1	// Digit8
+0a	9		0	0039	0028	-1	-1	// Digit9
+0b	0		0	0030	0029	-1	-1	// Digit0
+0c	OEM_MINUS		1	0449	0429	2013	2014	// Minus
+0d	OEM_PLUS		0	002d	003d	002b	005f	// Equal
+10	Q		1	044f	042f	-1	-1	// KeyQ
+11	W		1	0448	0428	-1	-1	// KeyW
+12	E		1	0435	0415	20ac	-1	// KeyE
+13	R		1	0440	0420	-1	-1	// KeyR
+14	T		1	0442	0422	-1	-1	// KeyT
+15	Y		1	0438	0418	-1	-1	// KeyY
+16	U		1	0443	0423	-1	-1	// KeyU
+17	I		1	0456	0406	-1	-1	// KeyI
+18	O		1	043e	041e	-1	-1	// KeyO
+19	P		1	043f	041f	-1	-1	// KeyP
+1a	OEM_4		0	002c	003b	005b	007b	// BracketLeft
+1b	OEM_6		0	002e	003a	005d	007d	// BracketRight
+2b	OEM_5		0	005c	007c	-1	-1	// Backslash
+1e	A		1	0430	0410	-1	-1	// KeyA
+1f	S		1	0441	0421	-1	-1	// KeyS
+20	D		1	0434	0414	-1	-1	// KeyD
+21	F		1	0444	0424	-1	-1	// KeyF
+22	G		1	0433	0413	20b4	-1	// KeyG
+23	H		1	0445	0425	-1	-1	// KeyH
+24	J		1	0439	0419	-1	-1	// KeyJ
+25	K		1	043a	041a	-1	-1	// KeyK
+26	L		1	043b	041b	-1	-1	// KeyL
+27	OEM_1		1	0436	0416	003b	003a	// Semicolon
+28	OEM_7		1	044c	042c	0022	2019	// Quote
+2c	Z		1	0437	0417	-1	-1	// KeyZ
+2d	X		1	0447	0427	-1	-1	// KeyX
+2e	C		1	0446	0426	-1	-1	// KeyC
+2f	V		1	0432	0412	-1	-1	// KeyV
+30	B		1	0431	0411	-1	-1	// KeyB
+31	N		1	043d	041d	-1	-1	// KeyN
+32	M		1	043c	041c	-1	-1	// KeyM
+33	OEM_COMMA		1	0454	0404	003c	00ab	// Comma
+34	OEM_PERIOD		1	0457	0407	003e	00bb	// Period
+35	OEM_2		0	0027	003f	002f	-1	// Slash
+56	OEM_102		1	044e	042e	-1	-1	// IntlBackslash
+39	SPACE		0	0020	0020	-1	-1
+
+DESCRIPTIONS
+
+0422	Ukrainian (CharaChorder Two)
+
+LANGUAGENAMES
+
+0422	Ukrainian (Ukraine)
+
+ENDKBD
