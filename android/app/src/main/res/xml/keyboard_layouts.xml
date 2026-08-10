@@ -3,6 +3,5 @@
     <keyboard-layout
         android:name="ua_cc"
         android:label="@string/keyboard_layout_ua_cc"
-        android:keyboardLayout="@raw/ua_cc"
-        android:locale="uk-UA" />
+        android:keyboardLayout="@raw/ua_cc" />
 </keyboard-layouts>
