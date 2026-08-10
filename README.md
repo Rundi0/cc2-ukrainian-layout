@@ -66,9 +66,26 @@ setxkbmap ua_cc          # X11, перевірити
 
 ### Windows
 
-1. Відкрити `out/ua_cc.klc` у [MSKLC](https://www.microsoft.com/en-us/download/details.aspx?id=102134) → `Project → Build DLL and Setup Package`.
-2. Або напряму: `kbdutool.exe -u -s ua_cc.klc`, потім інсталювати DLL.
-3. Права адміністратора потрібні один раз, при встановленні.
+PowerShell від адміністратора:
+
+```powershell
+.\windows\install.ps1
+```
+
+Копіює `uacc.dll` у `System32`/`SysWOW64`, реєструє KLID `a0000422`, і — головне —
+прибирає `Layout Display Name`. Далі вийти з облікового запису і зайти назад,
+потім `Параметри → Час і мова → Мова та регіон → Українська → Параметри мови →
+Додати клавіатуру`. Видалення — `windows\uninstall.ps1`.
+
+MSKLC потрібен **лише щоб зібрати** `uacc.dll` з `out/ua_cc.klc`
+(`Project → Build DLL and Setup Package`), а не щоб її встановити. Готова DLL
+лежить у `windows/`, тож на решті машин MSKLC не потрібен взагалі.
+
+> **Чому окремий крок з `Layout Display Name`.** MSKLC 1.4 записує в реєстр
+> посилання на строковий ресурс `@%SystemRoot%\system32\uacc.dll,-1000`, якого в
+> зібраній DLL немає. Windows 11 не може розкрити назву і показує розкладку як
+> «Unavailable input method»: вибрати мишкою ще можна, а `Win+Space` її пропускає.
+> Прибирання цього значення повертає fallback на `Layout Text`.
 
 VK-коди в `.klc` лишені **американські** (`Q` на скенкоді `10` і т.д.) — саме тому `Ctrl+C`/`Ctrl+V` працюють як завжди.
 
