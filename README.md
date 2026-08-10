@@ -83,13 +83,18 @@ cp out/ua_cc.keylayout ~/Library/Keyboard\ Layouts/
 
 ### Android
 
-```bash
-cd android && gradle assembleDebug
-adb install app/build/outputs/apk/debug/app-debug.apk
-```
+Готовий APK збирає CI на кожен пуш:
+**[Releases → latest](https://github.com/Rundi0/cc2-ukrainian-layout/releases/tag/latest)**.
+Локально — `cd android && gradle assembleDebug`.
 
-Далі `Settings → System → Languages & input → Physical keyboard → CharaChorder Two → Ukrainian (CharaChorder Two)`.
-Root не потрібен. `min SDK 16`.
+1. Встановити APK (потрібен дозвіл на встановлення з невідомих джерел).
+2. **Відкрити застосунок один раз.** Поки пакет не запускали, він у stopped-стані і система пропускає його, шукаючи розкладки.
+3. Підключити CC2.
+4. `Налаштування → Система → Клавіатура → Фізична клавіатура → CharaChorder Two → Ukrainian (CharaChorder Two)`.
+
+Root не потрібен, `minSdk 21`. Розкладка видима лише поки пристрій підключений.
+
+`android/debug.keystore` навмисно лежить у репозиторії: без фіксованого ключа кожна збірка CI підписувалась би новим, і оновлення падало б з `INSTALL_FAILED_UPDATE_INCOMPATIBLE`. Це debug-ключ, довіряти йому нічого не варто.
 
 ## Відомі обмеження
 
