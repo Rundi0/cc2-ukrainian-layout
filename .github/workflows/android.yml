@@ -1,0 +1,45 @@
+name: android
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      # the .kcm in res/raw must match gen.py, not whatever was committed
+      - name: Regenerate layouts
+        run: |
+          python3 gen.py
+          git diff --exit-code -- out android || {
+            echo '::error::committed layouts are stale, run gen.py'; exit 1; }
+
+      - name: Build APK
+        working-directory: android
+        run: gradle --no-daemon assembleDebug
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mv android/app/build/outputs/apk/debug/app-debug.apk ua-cc2-layout.apk
+          gh release view latest >/dev/null 2>&1 || gh release create latest \
+            --title 'Latest build' \
+            --notes 'Ukrainian layout for CharaChorder Two. Sideload, then Settings -> System -> Physical keyboard.'
+          gh release upload latest ua-cc2-layout.apk --clobber
