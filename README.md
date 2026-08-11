@@ -52,17 +52,19 @@ python3 gen.py
 ### Linux
 
 ```bash
-mkdir -p ~/.config/xkb/symbols
-cp out/ua_cc ~/.config/xkb/symbols/
-setxkbmap ua_cc          # X11, перевірити
+sudo python3 linux/install.py            # встановити
+sudo python3 linux/install.py --remove   # прибрати
 ```
 
-Постійно — додати `ua_cc` у список розкладок GNOME/KDE через `~/.config/xkb/rules/evdev.xml`
-(потрібно libxkbcommon ≥ 1.0; Wayland підхоплює `~/.config/xkb` без рута).
-Системний варіант: `sudo cp out/ua_cc /usr/share/X11/xkb/symbols/`.
+Кладе `ua_cc` у `/usr/share/X11/xkb/symbols/` і реєструє в `rules/evdev.xml` та
+`rules/evdev.lst`, після чого «Ukrainian (CharaChorder Two)» зʼявляється у
+списку розкладок GNOME/KDE. На X11 можна одразу `setxkbmap ua_cc`.
 
-> Файл згенеровано, але **не скомпільовано** — `xkbcli` у цій системі немає.
-> Перевір `xkbcli compile-keymap --layout ua_cc` перед тим, як покладатися.
+Системно, а не в `~/.config/xkb`, бо GNOME і KDE будують свій список саме з
+`rules/` — користувацька копія працює для `xkbcommon`, але в UI не видно.
+Оновлення пакета `xkeyboard-config` перезаписує `rules/evdev.*`; тоді просто
+запусти скрипт ще раз. Оригінали зберігаються поруч як `evdev.xml.orig` і
+`evdev.lst.orig`.
 
 ### Windows
 
@@ -118,5 +120,8 @@ Root не потрібен, `minSdk 21`. Розкладка видима лиш�
 - **Android: `\` і `|` недосяжні** в українському профілі. `generic.kl` мапить і `KEY_BACKSLASH` (43), і `KEY_102ND` (86) на той самий `KEYCODE_BACKSLASH`, а ми віддали цей keycode під **ю**. Перекрити `.kl` без рута не можна.
 - **AltGr на Android** (`ralt:`) залежить від пристрою — Android часто ковтає правий Alt як меню-модифікатор. Все, що потрібно для звичайного тексту (`, . ; : - ? ! '`), доступне з base/Shift, без AltGr.
 - **Linux, TUI-програми.** vim, tmux, i3, readline читають keysym активної групи, тому в українському режимі їхні гарячі клавіші зʼїдуть. GTK/Qt/Chromium мають latin-fallback і працюють. Обхід — перемикати профіль CC2, а не розкладку ОС.
-- **xkb не скомпільовано** (див. вище).
-- **`.klc` не зібрано** — MSKLC є тільки під Windows.
+- **`.keylayout` не перевірено на живій macOS** — файл валідний XML, але жодного разу не завантажувався в систему.
+
+Перевірено: `out/ua_cc` компілюється `xkbcli compile-keymap` (libxkbcommon 1.4)
+без помилок і дає очікувані символи; `.klc` зібрано MSKLC і встановлено; APK
+збирає CI, `.kcm` усередині збігається з `gen.py` побайтово.
