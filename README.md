@@ -58,7 +58,17 @@ sudo python3 linux/install.py --remove   # прибрати
 
 Кладе `ua_cc` у `/usr/share/X11/xkb/symbols/` і реєструє в `rules/evdev.xml` та
 `rules/evdev.lst`, після чого «Ukrainian (CharaChorder Two)» зʼявляється у
-списку розкладок GNOME/KDE. На X11 можна одразу `setxkbmap ua_cc`.
+списку розкладок GNOME/KDE. Додай її там — тільки так вибір переживає перезахід:
+
+```bash
+gsettings set org.gnome.desktop.input-sources sources "[('xkb','us'),('xkb','ua_cc')]"
+```
+
+На X11 для поточної сесії — `setxkbmap us,ua_cc -option grp:win_space_toggle`.
+
+> `setxkbmap` **замінює всю конфігурацію**, а не доповнює її. `setxkbmap ua_cc`
+> лишить тебе з єдиною групою: без латиниці й без клавіші перемикання.
+> Рятує `setxkbmap us`.
 
 Системно, а не в `~/.config/xkb`, бо GNOME і KDE будують свій список саме з
 `rules/` — користувацька копія працює для `xkbcommon`, але в UI не видно.

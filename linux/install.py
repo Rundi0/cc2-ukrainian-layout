@@ -82,8 +82,16 @@ def main():
 
     print('removed' if remove else 'installed %s' % dst)
     if not remove:
-        print('\nPick "%s" in your desktop\'s keyboard settings, or on X11:' % DESC)
-        print('    setxkbmap %s' % NAME)
+        print('\nPick "%s" in your desktop\'s keyboard settings -- that is the'
+              % DESC)
+        print('only way it survives a relogin.  GNOME, from the shell:')
+        print("    gsettings set org.gnome.desktop.input-sources sources "
+              "\"[('xkb','us'),('xkb','%s')]\"" % NAME)
+        print('\nOn X11, for the current session only:')
+        print('    setxkbmap us,%s -option grp:win_space_toggle' % NAME)
+        print('setxkbmap REPLACES the whole config -- listing only %s there'
+              % NAME)
+        print('leaves you with no Latin layout and no way to switch back.')
         print('\nA distro upgrade of xkeyboard-config rewrites rules/evdev.*;')
         print('re-run this script if the layout disappears from the list.')
 
