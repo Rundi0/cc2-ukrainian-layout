@@ -29,7 +29,7 @@ xkb_symbols "basic" {
     key <AD10> { type[Group1] = "FOUR_LEVEL_SEMIALPHABETIC", [ U043F, U041F, NoSymbol, NoSymbol ] }; // KeyP
     key <AD11> { type[Group1] = "FOUR_LEVEL", [ U002C, U003B, U005B, U007B ] }; // BracketLeft
     key <AD12> { type[Group1] = "FOUR_LEVEL", [ U002E, U003A, U005D, U007D ] }; // BracketRight
-    key <BKSL> { type[Group1] = "FOUR_LEVEL", [ U005C, U007C, NoSymbol, NoSymbol ] }; // Backslash
+    key <BKSL> { type[Group1] = "FOUR_LEVEL_SEMIALPHABETIC", [ U044E, U042E, U005C, U007C ] }; // Backslash
     key <AC01> { type[Group1] = "FOUR_LEVEL_SEMIALPHABETIC", [ U0430, U0410, NoSymbol, NoSymbol ] }; // KeyA
     key <AC02> { type[Group1] = "FOUR_LEVEL_SEMIALPHABETIC", [ U0441, U0421, NoSymbol, NoSymbol ] }; // KeyS
     key <AC03> { type[Group1] = "FOUR_LEVEL_SEMIALPHABETIC", [ U0434, U0414, NoSymbol, NoSymbol ] }; // KeyD
@@ -51,7 +51,7 @@ xkb_symbols "basic" {
     key <AB08> { type[Group1] = "FOUR_LEVEL_SEMIALPHABETIC", [ U0454, U0404, U003C, U00AB ] }; // Comma
     key <AB09> { type[Group1] = "FOUR_LEVEL_SEMIALPHABETIC", [ U0457, U0407, U003E, U00BB ] }; // Period
     key <AB10> { type[Group1] = "FOUR_LEVEL", [ U0027, U003F, U002F, NoSymbol ] }; // Slash
-    key <LSGT> { type[Group1] = "FOUR_LEVEL_SEMIALPHABETIC", [ U044E, U042E, NoSymbol, NoSymbol ] }; // IntlBackslash
+    key <LSGT> { type[Group1] = "FOUR_LEVEL", [ U005C, U007C, NoSymbol, NoSymbol ] }; // IntlBackslash
 
     include "level3(ralt_switch)"
 };

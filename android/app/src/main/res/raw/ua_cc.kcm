@@ -114,6 +114,15 @@ key RIGHT_BRACKET {
     shift+ralt:                         '}'
 }
 
+key BACKSLASH {
+    label:                              '\u042e'
+    base:                               '\u044e'
+    shift, capslock:                    '\u042e'
+    shift+capslock:                     '\u044e'
+    ralt:                               '\\'
+    shift+ralt:                         '|'
+}
+
 key A {
     label:                              '\u0410'
     base:                               '\u0430'
@@ -268,11 +277,4 @@ key SLASH {
     base:                               '\''
     shift:                              '?'
     ralt:                               '/'
-}
-
-key BACKSLASH {
-    label:                              '\u042e'
-    base:                               '\u044e'
-    shift, capslock:                    '\u042e'
-    shift+capslock:                     '\u044e'
 }
