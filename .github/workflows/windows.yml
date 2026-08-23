@@ -22,7 +22,7 @@ jobs:
         shell: bash
         run: |
           python3 gen.py
-          git diff --exit-code -- windows/src/uacc.c out/ windows/uacc.reg \
+          git diff --exit-code -- windows/src/uacc.c out/ windows/uacc.reg windows/expected.tsv \
             || { echo "::error::gen.py output differs from what is committed"; exit 1; }
 
       # Built with MSVC, not mingw.  A mingw -shared build produces a PE with

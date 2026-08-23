@@ -3,6 +3,9 @@
     a keyboard, then asks Windows to actually load it and type with it.
     Run in a normal (non-elevated) PowerShell and paste the whole output.
 #>
+$here = Split-Path -Parent $MyInvocation.MyCommand.Path
+# without this the Cyrillic in the key test prints as '?' in a cp1251 console
+[Console]::OutputEncoding = [Text.Encoding]::UTF8
 $klid = 'a0000422'
 $key  = "HKLM:\SYSTEM\CurrentControlSet\Control\Keyboard Layouts\$klid"
 
@@ -65,6 +68,8 @@ public static extern bool UnloadKeyboardLayout(IntPtr hkl);
 [DllImport("user32.dll", SetLastError=true, CharSet=CharSet.Unicode)]
 public static extern int ToUnicodeEx(uint vk, uint sc, byte[] state,
     System.Text.StringBuilder buf, int cch, uint flags, IntPtr hkl);
+[DllImport("user32.dll")]
+public static extern uint MapVirtualKeyEx(uint code, uint mapType, IntPtr hkl);
 '@
 
 # KLF_ACTIVATE 0x1, KLF_SUBSTITUTE_OK 0x2, KLF_NOTELLSHELL 0x80
@@ -98,18 +103,40 @@ if ($hkl -ne [IntPtr]::Zero) {
     if (($v -shr 16) -ne 0xF0C0) {
         Write-Host ("  WARNING: high word 0x{0:X4}, expected 0xF0C0 -- Windows substituted another layout" -f ($v -shr 16)) -ForegroundColor Yellow
     }
-    function Type($vk, $sc, $altgr, $expect, $what) {
+    # Ask the loaded DLL what every key produces on every level and compare
+    # against expected.tsv, which gen.py writes from the same table the DLL is
+    # generated from.  This is the check that says "yes, this is the layout".
+    $exp = Join-Path $here 'expected.tsv'
+    if (-not (Test-Path $exp)) { Write-Warning "no $exp, skipping key test"; return }
+
+    $levelName = 'base', 'shift', 'altgr', 'shift+altgr'
+    $bad = @()
+    $n   = 0
+    foreach ($line in Get-Content $exp) {
+        if ($line.StartsWith('#')) { continue }
+        $f     = $line.Split("`t")
+        $sc    = [Convert]::ToUInt32($f[0], 16)
+        $lvl   = [int]$f[1]
+        $want  = [string][char][Convert]::ToInt32($f[2], 16)
+        $vk    = [Kbd.N]::MapVirtualKeyEx($sc, 3, $hkl)   # MAPVK_VSC_TO_VK_EX
+
         $st = New-Object byte[] 256
-        if ($altgr) { $st[0x11] = 0x80; $st[0x12] = 0x80 }   # Ctrl+Alt = AltGr
-        $sb = New-Object Text.StringBuilder 8
-        $n = [Kbd.N]::ToUnicodeEx($vk, $sc, $st, $sb, 8, 0, $hkl)
-        $got = if ($n -gt 0) { $sb.ToString() } else { "(nothing, n=$n)" }
-        $ok  = if ($got -eq $expect) { 'OK ' } else { 'BAD' }
-        $col = if ($got -eq $expect) { 'Green' } else { 'Red' }
-        Write-Host ("  {0} {1,-18} -> '{2}'  expected '{3}'" -f $ok, $what, $got, $expect) -ForegroundColor $col
+        if ($lvl -band 1) { $st[0x10] = 0x80 }                    # Shift
+        if ($lvl -band 2) { $st[0x11] = 0x80; $st[0x12] = 0x80 }  # Ctrl+Alt = AltGr
+
+        $sb  = New-Object Text.StringBuilder 8
+        $r   = [Kbd.N]::ToUnicodeEx($vk, $sc, $st, $sb, 8, 0, $hkl)
+        $got = if ($r -gt 0) { $sb.ToString() } else { "(none, n=$r)" }
+        $n++
+        if ($got -ne $want) {
+            $bad += "sc {0:X2} {1,-11} -> '{2}'  expected '{3}'" -f $sc, $levelName[$lvl], $got, $want
+        }
     }
-    Type 0x43 0x2E $false ([char]0x0446) 'C'
-    Type 0x43 0x2E $true  ([char]0x0457) 'AltGr+C'
-    Type 0x42 0x30 $true  ([char]0x044E) 'AltGr+B'
-    Type 0xBC 0x33 $false ','            'comma key'
+
+    if ($bad) {
+        Write-Host ("  {0} of {1} keys WRONG:" -f $bad.Count, $n) -ForegroundColor Red
+        $bad | ForEach-Object { Write-Host "    $_" -ForegroundColor Red }
+    } else {
+        Write-Host ("  all {0} key/level combinations match expected.tsv" -f $n) -ForegroundColor Green
+    }
 }
