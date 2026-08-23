@@ -7,13 +7,15 @@ if not defined VSPATH ( echo cannot locate Visual Studio & exit /b 1 )
 call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" %1 || exit /b 1
 
 set "SRC=%~dp0"
+rem %~dp0 ends in a backslash, which would escape the closing quote of /I
+set "SRCD=%SRC:~0,-1%"
 if not exist "%SRC%..\%2" mkdir "%SRC%..\%2"
 
 rc /nologo /fo "%TEMP%\uacc_%2.res" "%SRC%uacc.rc" || exit /b 1
 
 rem /GS- and /NODEFAULTLIB because nothing from the CRT may be linked in:
 rem a layout DLL is mapped by win32k and must import nothing.
-cl /nologo /c /O1 /GS- /Gy- /I"%SRC%" /Fo"%TEMP%\uacc_%2.obj" "%SRC%uacc.c" || exit /b 1
+cl /nologo /c /O1 /GS- /Gy- /I"%SRCD%" /Fo"%TEMP%\uacc_%2.obj" "%SRC%uacc.c" || exit /b 1
 
 link /nologo /DLL /NOENTRY /NODEFAULTLIB /SUBSYSTEM:NATIVE ^
      /MERGE:.rdata=.data /MERGE:.bss=.data /IGNORE:4254 ^
