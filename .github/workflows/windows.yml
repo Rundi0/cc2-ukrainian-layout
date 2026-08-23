@@ -45,7 +45,10 @@ jobs:
               i386)  cc=i686-w64-mingw32-gcc ;;
             esac
             mkdir -p windows/$arch
-            $cc -shared -nostdlib -Wl,--no-entry \
+            # --entry=0 is ld's way of saying NoEntryPoint: no symbol named
+            # "0" exists, so ld parses it as an address. A layout DLL is pure
+            # data -- win32k never calls into it.
+            $cc -shared -nostdlib -Wl,--entry=0 \
                 -O2 -Wall -Wextra -Wno-unused \
                 -I windows/src \
                 -o windows/$arch/uacc.dll \
