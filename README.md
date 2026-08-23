@@ -104,6 +104,17 @@ git pull
 .\windows\install.ps1        # PowerShell від адміністратора
 ```
 
+> **`... is not digitally signed`.** PowerShell за замовчуванням не запускає
+> непідписані скрипти, а файли, що приїхали з інтернету, ще й позначені як
+> завантажені. Знімається в тому ж вікні, без постійних змін у системі:
+>
+> ```powershell
+> Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+> Get-ChildItem -Recurse | Unblock-File
+> ```
+>
+> `-Scope Process` діє лише до закриття вікна.
+
 Далі **вийти з облікового запису і зайти назад** (Windows тримає стару
 `uacc.dll` завантаженою), потім `Параметри → Час і мова → Мова та регіон →
 Українська → Параметри мови → Додати клавіатуру`. Видалення —
