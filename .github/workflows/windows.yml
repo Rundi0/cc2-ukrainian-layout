@@ -1,0 +1,88 @@
+name: windows
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'windows/amd64/**'
+      - 'windows/i386/**'
+      - 'windows/built-from.sha256'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install mingw-w64
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gcc-mingw-w64-x86-64 gcc-mingw-w64-i686
+
+      - name: regenerate and fail if the committed source is stale
+        run: |
+          python3 gen.py
+          git diff --exit-code -- windows/src/uacc.c out/ \
+            || { echo "::error::gen.py output differs from what is committed"; exit 1; }
+
+      - name: host ABI check
+        run: gcc -fsyntax-only -fshort-wchar -Wall -Wextra -Wno-unused
+             -I windows/src windows/src/uacc.c
+
+      # Layout DLLs are loaded by win32k, so they must import nothing and have
+      # no entry point -- same settings MSKLC uses (IgnoreAllDefaultLibraries,
+      # NoEntryPoint).
+      - name: build uacc.dll
+        run: |
+          set -e
+          for arch in amd64 i386; do
+            case $arch in
+              amd64) cc=x86_64-w64-mingw32-gcc ;;
+              i386)  cc=i686-w64-mingw32-gcc ;;
+            esac
+            mkdir -p windows/$arch
+            $cc -shared -nostdlib -Wl,--no-entry \
+                -O2 -Wall -Wextra -Wno-unused \
+                -I windows/src \
+                -o windows/$arch/uacc.dll \
+                windows/src/uacc.c windows/src/uacc.def
+            echo "built windows/$arch/uacc.dll"
+          done
+
+      - name: verify the DLLs
+        run: |
+          set -e
+          fail=0
+          check() {  # $1=file  $2=expected machine
+            echo "--- $1"
+            file "$1"
+            x86_64-w64-mingw32-objdump -p "$1" > /tmp/hdr.txt
+            grep -q "$2" /tmp/hdr.txt \
+              || { echo "::error::$1: wrong machine, expected $2"; fail=1; }
+            grep -qw "KbdLayerDescriptor" /tmp/hdr.txt \
+              || { echo "::error::$1: KbdLayerDescriptor not exported"; fail=1; }
+            # a layout DLL that imports anything cannot load in win32k
+            if grep -q "DLL Name:" /tmp/hdr.txt; then
+              echo "::error::$1: has imports:"; grep "DLL Name:" /tmp/hdr.txt; fail=1
+            fi
+            grep -A2 "Export Address Table" /tmp/hdr.txt | head -5
+          }
+          check windows/amd64/uacc.dll "pei-x86-64"
+          check windows/i386/uacc.dll  "pei-i386"
+          exit $fail
+
+      - name: stamp and commit
+        run: |
+          sha256sum windows/src/uacc.c | cut -d' ' -f1 > windows/built-from.sha256
+          if git diff --quiet -- windows/; then
+            echo "DLLs unchanged, nothing to commit"; exit 0
+          fi
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add windows/amd64/uacc.dll windows/i386/uacc.dll windows/built-from.sha256
+          git commit -m "windows: rebuild uacc.dll from $(git rev-parse --short HEAD) [skip ci]"
+          git push

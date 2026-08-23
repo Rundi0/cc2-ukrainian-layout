@@ -10,22 +10,19 @@ $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $klid = 'a0000422'
 
-# The shipped DLL is built by MSKLC from out\ua_cc.klc.  gen.py can change the
-# .klc without anyone rebuilding the DLL, and a stale DLL installs silently as
-# the *old* layout -- so compare what the DLL was built from against what is in
-# the tree now.
-$klc = Join-Path (Split-Path -Parent $here) 'out\ua_cc.klc'
+# uacc.dll is cross-compiled from windows\src\uacc.c by the `windows` GitHub
+# Actions workflow, which commits the result back.  If you are on a commit CI
+# has not caught up with yet, the DLL here predates the source -- installing it
+# would silently give you the OLD layout, so refuse.
+$src = Join-Path $here 'src\uacc.c'
 $stampFile = "$here\built-from.sha256"
-if ((Test-Path $klc) -and (Test-Path $stampFile)) {
-    $now   = (Get-FileHash $klc -Algorithm SHA256).Hash
+if ((Test-Path $src) -and (Test-Path $stampFile)) {
+    $now   = (Get-FileHash $src -Algorithm SHA256).Hash
     $built = (Get-Content $stampFile -Raw).Trim()
     if ($now -ne $built) {
-        Write-Warning 'uacc.dll is STALE: out\ua_cc.klc changed since it was built.'
+        Write-Warning 'uacc.dll is STALE: windows\src\uacc.c changed since it was built.'
         Write-Warning 'Installing it would give you the OLD layout.'
-        Write-Warning 'Rebuild: open out\ua_cc.klc in MSKLC -> Project -> Build DLL and'
-        Write-Warning 'Setup Package, copy the new DLLs into windows\amd64 and windows\i386,'
-        Write-Warning "then write the new hash into windows\built-from.sha256:"
-        Write-Warning "    (Get-FileHash out\ua_cc.klc -Algorithm SHA256).Hash > windows\built-from.sha256"
+        Write-Warning 'Wait for the `windows` workflow to finish, then: git pull'
         if (-not $Force) {
             throw 'refusing to install a stale layout; pass -Force to override'
         }
