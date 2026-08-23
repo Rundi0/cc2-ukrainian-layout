@@ -17,7 +17,12 @@ $klid = 'a0000422'
 $src = Join-Path $here 'src\uacc.c'
 $stampFile = "$here\built-from.sha256"
 if ((Test-Path $src) -and (Test-Path $stampFile)) {
-    $now   = (Get-FileHash $src -Algorithm SHA256).Hash
+    # normalise line endings first -- git hands out CRLF or LF depending on
+    # core.autocrlf, and a raw file hash would differ between clones
+    $bytes = [Text.Encoding]::UTF8.GetBytes(
+        ([IO.File]::ReadAllText($src) -replace "`r`n", "`n"))
+    $now   = (Get-FileHash -InputStream ([IO.MemoryStream]::new($bytes)) `
+                           -Algorithm SHA256).Hash
     $built = (Get-Content $stampFile -Raw).Trim()
     if ($now -ne $built) {
         Write-Warning 'uacc.dll is STALE: windows\src\uacc.c changed since it was built.'

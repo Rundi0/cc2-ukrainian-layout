@@ -47,7 +47,7 @@ jobs:
       - name: stamp and commit
         shell: bash
         run: |
-          sha256sum windows/src/uacc.c | cut -d' ' -f1 > windows/built-from.sha256
+          python3 windows/src/stamp.py > windows/built-from.sha256
           if git diff --quiet -- windows/; then
             echo "DLLs unchanged, nothing to commit"; exit 0
           fi

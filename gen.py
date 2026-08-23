@@ -594,8 +594,10 @@ if __name__ == '__main__':
         print('%-22s %5d bytes' % (p.name, p.stat().st_size))
     winsrc = OUT.parent / 'windows/src/uacc.c'
     if winsrc.parent.is_dir():
-        winsrc.write_text(kbd_c(), encoding='utf-8')
-        print('%-22s -> mingw build' % winsrc.name)
+        # write_bytes, not write_text: write_text translates \n to \r\n on
+        # Windows, so the file CI hashes would not be the file git stores
+        winsrc.write_bytes(kbd_c().encode('utf-8'))
+        print('%-22s -> MSVC build' % winsrc.name)
     winreg = OUT.parent / 'windows/uacc.reg'
     if winreg.parent.is_dir():
         winreg.write_bytes(b'\xff\xfe' + reg().encode('utf-16-le'))
