@@ -42,11 +42,19 @@ foreach ($t in $targets) {
 reg.exe import "$here\uacc.reg" | Out-Null
 Write-Host "registered $klid"
 
-# MSKLC 1.4 points Layout Display Name at a string resource it never puts in
-# the DLL; Windows 11 then lists the layout as "Unavailable input method".
-# Dropping the value makes Windows fall back to Layout Text.
+# reg.exe import adds and overwrites, but never deletes.  Earlier versions of
+# this layout were registered from an MSKLC export that named two string
+# resources (-1000, -1100) which our DLL does not contain.  Windows cannot
+# resolve them, and an input method with an unresolvable display name is shown
+# under Language options but never offered as a keyboard -- so clear them out.
 $key = "HKLM:\SYSTEM\CurrentControlSet\Control\Keyboard Layouts\$klid"
-Remove-ItemProperty $key -Name 'Layout Display Name' -ErrorAction SilentlyContinue
+foreach ($stale in 'Layout Display Name', 'Custom Language Name',
+                   'Custom Language Display Name', 'Layout Product Code') {
+    if ($null -ne (Get-ItemProperty $key -Name $stale -ErrorAction SilentlyContinue)) {
+        Remove-ItemProperty $key -Name $stale
+        Write-Host "removed stale '$stale'"
+    }
+}
 
 Get-ItemProperty $key | Format-List 'Layout File', 'Layout Text', 'Layout Id'
 Write-Host ''

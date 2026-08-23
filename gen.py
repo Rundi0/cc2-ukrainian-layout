@@ -529,6 +529,30 @@ def kbd_c():
     return '\n'.join(L)
 
 
+
+# ----------------------------------------------------- Windows: registry ---
+# Shipped as generated output rather than an MSKLC export, because MSKLC's
+# export names two string resources (-1000, -1100) that our DLL does not
+# contain.  Windows cannot resolve them, and an input method whose display
+# name will not resolve is listed under Language options but never offered as
+# a keyboard.  We register only fields we actually back.
+KLID = 'a0000422'
+LAYOUT_ID = '00c0'
+
+
+def reg():
+    return '\r\n'.join([
+        'Windows Registry Editor Version 5.00',
+        '',
+        r'[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Keyboard '
+        r'Layouts\%s]' % KLID,
+        '"Layout Text"="%s"' % NAME,
+        '"Layout File"="uacc.dll"',
+        '"Layout Id"="%s"' % LAYOUT_ID,
+        '',
+    ])
+
+
 # ----------------------------------------------------------------- check ---
 def check():
     ALPHABET = 'абвгґдеєжзиіїйклмнопрстуфхцчшщьюя'
@@ -572,6 +596,10 @@ if __name__ == '__main__':
     if winsrc.parent.is_dir():
         winsrc.write_text(kbd_c(), encoding='utf-8')
         print('%-22s -> mingw build' % winsrc.name)
+    winreg = OUT.parent / 'windows/uacc.reg'
+    if winreg.parent.is_dir():
+        winreg.write_bytes(b'\xff\xfe' + reg().encode('utf-16-le'))
+        print('%-22s -> registry' % winreg.name)
     raw = OUT.parent / 'android/app/src/main/res/raw/ua_cc.kcm'
     if raw.parent.is_dir():
         raw.write_bytes(kcm().encode('utf-8'))
