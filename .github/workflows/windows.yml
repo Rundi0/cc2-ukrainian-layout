@@ -14,66 +14,38 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: install mingw-w64
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq gcc-mingw-w64-x86-64 gcc-mingw-w64-i686
-
       - name: regenerate and fail if the committed source is stale
+        shell: bash
         run: |
           python3 gen.py
-          git diff --exit-code -- windows/src/uacc.c out/ \
+          git diff --exit-code -- windows/src/uacc.c out/ windows/uacc.reg \
             || { echo "::error::gen.py output differs from what is committed"; exit 1; }
 
-      - name: host ABI check
-        run: gcc -fsyntax-only -fshort-wchar -Wall -Wextra -Wno-unused
-             -I windows/src windows/src/uacc.c
-
-      # Layout DLLs are loaded by win32k, so they must import nothing and have
-      # no entry point -- same settings MSKLC uses (IgnoreAllDefaultLibraries,
-      # NoEntryPoint).
-      - name: build uacc.dll
+      # Built with MSVC, not mingw.  A mingw -shared build produces a PE with
+      # .text/.rdata/.pdata/.idata/.edata and a writable .data; win32k refused
+      # it -- LoadKeyboardLayout returned NULL while stock layouts loaded fine
+      # in the same process.  These are the flags MSKLC and winkbdlayouts use.
+      # vcvarsall.bat refuses to run twice in one shell, so one step per arch.
+      - name: build amd64
+        shell: cmd
         run: |
-          set -e
-          for arch in amd64 i386; do
-            case $arch in
-              # --disable-high-entropy-va is a 64-bit-only PE option
-              amd64) cc=x86_64-w64-mingw32-gcc; base=0x180000000
-                     extra=-Wl,--disable-high-entropy-va ;;
-              i386)  cc=i686-w64-mingw32-gcc;   base=0x10000000
-                     extra= ;;
-            esac
-            mkdir -p windows/$arch
-            # --entry=0 is ld's way of saying NoEntryPoint: no symbol named
-            # "0" exists, so ld parses it as an address. A layout DLL is pure
-            # data -- win32k never calls into it.
-            # win32k loads this in kernel mode, so it must look like MSKLC's
-            # output: NATIVE subsystem, fixed image base, no ASLR/NX. A plain
-            # -shared build gives WINDOWS_CUI and the layout is then listed in
-            # Language options but never selectable as an input method.
-            $cc -shared -nostdlib -Wl,--entry=0 \
-                -Wl,--subsystem,native \
-                -Wl,--image-base,$base \
-                -Wl,--disable-dynamicbase \
-                -Wl,--disable-nxcompat \
-                -Wl,--disable-auto-import $extra \
-                -O2 -Wall -Wextra -Wno-unused \
-                -I windows/src \
-                -o windows/$arch/uacc.dll \
-                windows/src/uacc.c windows/src/uacc.def
-            echo "built windows/$arch/uacc.dll"
-          done
+          call windows\src\build.cmd x64 amd64 0x180000000
+
+      - name: build i386
+        shell: cmd
+        run: |
+          call windows\src\build.cmd x86 i386 0x10000000
 
       - name: verify the DLLs
-        run: |
-          file windows/amd64/uacc.dll windows/i386/uacc.dll
-          python3 windows/src/verify-pe.py windows/amd64/uacc.dll windows/i386/uacc.dll
+        shell: bash
+        run: python3 windows/src/verify-pe.py windows/amd64/uacc.dll windows/i386/uacc.dll
 
       - name: stamp and commit
+        shell: bash
         run: |
           sha256sum windows/src/uacc.c | cut -d' ' -f1 > windows/built-from.sha256
           if git diff --quiet -- windows/; then

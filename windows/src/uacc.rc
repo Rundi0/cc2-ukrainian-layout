@@ -1,0 +1,31 @@
+/* Version resource.  MSKLC-built layouts carry one; ours had no .rsrc section
+ * at all, which is one of the few structural differences left against a
+ * known-good layout DLL. */
+#define VER 1,0,0,0
+#define VERSTR "1.0.0.0"
+
+1 VERSIONINFO
+FILEVERSION    VER
+PRODUCTVERSION VER
+FILEOS         0x40004L      /* VOS_NT_WINDOWS32 */
+FILETYPE       0x2L          /* VFT_DLL          */
+FILESUBTYPE    0x0L
+{
+    BLOCK "StringFileInfo"
+    {
+        BLOCK "040904B0"
+        {
+            VALUE "CompanyName",      "cc2-ukrainian-layout"
+            VALUE "FileDescription",  "Ukrainian (CharaChorder Two) Keyboard Layout"
+            VALUE "FileVersion",      VERSTR
+            VALUE "InternalName",     "uacc"
+            VALUE "OriginalFilename", "uacc.dll"
+            VALUE "ProductName",      "Ukrainian (CharaChorder Two)"
+            VALUE "ProductVersion",   VERSTR
+        }
+    }
+    BLOCK "VarFileInfo"
+    {
+        VALUE "Translation", 0x409, 1200
+    }
+}
