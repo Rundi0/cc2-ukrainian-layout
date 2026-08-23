@@ -47,13 +47,14 @@ foreach ($p in 'HKCU:\Keyboard Layout\Preload', 'HKCU:\Keyboard Layout\Substitut
 }
 
 Write-Host "`n=== user language list ===" -ForegroundColor Cyan
-Get-WinUserLanguageList | ForEach-Object {
-    '{0}  tips: {1}' -f $_.LanguageTag, ($_.InputMethodTips -join ', ')
+foreach ($l in @(Get-WinUserLanguageList)) {
+    '{0}  tips: {1}' -f $l.LanguageTag, ($l.InputMethodTips -join ', ')
 }
 
 # ---------------------------------------------------------------------------
-# The decisive test: everything above can be perfect and the layout still be
-# unusable if win32k refuses the DLL.  Ask Windows to load it and type with it.
+# The decisive test.  Everything above can be perfect and the layout still be
+# unusable if win32k refuses the DLL.  Loading two stock layouts first is the
+# control: if those fail too, the test itself is broken, not our layout.
 # ---------------------------------------------------------------------------
 Write-Host "`n=== can Windows load and use it? ===" -ForegroundColor Cyan
 Add-Type -Namespace Kbd -Name N -MemberDefinition @'
@@ -66,16 +67,36 @@ public static extern int ToUnicodeEx(uint vk, uint sc, byte[] state,
     System.Text.StringBuilder buf, int cch, uint flags, IntPtr hkl);
 '@
 
-$hkl = [Kbd.N]::LoadKeyboardLayout($klid, 0x100)   # KLF_NOTELLSHELL
-if ($hkl -eq [IntPtr]::Zero) {
+# KLF_ACTIVATE 0x1, KLF_SUBSTITUTE_OK 0x2, KLF_NOTELLSHELL 0x80
+function Try-Load($id, $flags, $label) {
+    $h = [Kbd.N]::LoadKeyboardLayout($id, $flags)
     $e = [Runtime.InteropServices.Marshal]::GetLastWin32Error()
-    Write-Host "LoadKeyboardLayout FAILED, error $e" -ForegroundColor Red
-    Write-Host ([ComponentModel.Win32Exception]::new($e).Message) -ForegroundColor Red
-} else {
+    if ($h -eq [IntPtr]::Zero) {
+        Write-Host ("  {0,-34} NULL (err {1})" -f $label, $e) -ForegroundColor Red
+        return [IntPtr]::Zero
+    }
+    Write-Host ("  {0,-34} HKL 0x{1:X8}" -f $label, ($h.ToInt64() -band 0xFFFFFFFF)) -ForegroundColor Green
+    return $h
+}
+
+Write-Host "control -- these must succeed:"
+[void](Try-Load '00000409' 0x80 'US English (stock)')
+[void](Try-Load '00000422' 0x80 'Ukrainian (stock)')
+
+Write-Host "ours:"
+$hkl = [IntPtr]::Zero
+foreach ($t in @(@('a0000422', 0x80, 'a0000422 NOTELLSHELL'),
+                 @('a0000422', 0x81, 'a0000422 ACTIVATE'),
+                 @('a0000422', 0x82, 'a0000422 SUBSTITUTE_OK'),
+                 @('d0010422', 0x82, 'd0010422 (preload id)'))) {
+    $h = Try-Load $t[0] $t[1] $t[2]
+    if ($hkl -eq [IntPtr]::Zero) { $hkl = $h }
+}
+
+if ($hkl -ne [IntPtr]::Zero) {
     $v = $hkl.ToInt64() -band 0xFFFFFFFF
-    Write-Host ("LoadKeyboardLayout ok, HKL = 0x{0:X8}" -f $v)
     if (($v -shr 16) -ne 0xF0C0) {
-        Write-Host ("  WARNING: high word is 0x{0:X4}, expected 0xF0C0 -- Windows substituted another layout" -f ($v -shr 16)) -ForegroundColor Yellow
+        Write-Host ("  WARNING: high word 0x{0:X4}, expected 0xF0C0 -- Windows substituted another layout" -f ($v -shr 16)) -ForegroundColor Yellow
     }
     function Type($vk, $sc, $altgr, $expect, $what) {
         $st = New-Object byte[] 256
@@ -83,13 +104,12 @@ if ($hkl -eq [IntPtr]::Zero) {
         $sb = New-Object Text.StringBuilder 8
         $n = [Kbd.N]::ToUnicodeEx($vk, $sc, $st, $sb, 8, 0, $hkl)
         $got = if ($n -gt 0) { $sb.ToString() } else { "(nothing, n=$n)" }
-        $ok = if ($got -eq $expect) { 'OK ' } else { 'BAD' }
+        $ok  = if ($got -eq $expect) { 'OK ' } else { 'BAD' }
         $col = if ($got -eq $expect) { 'Green' } else { 'Red' }
         Write-Host ("  {0} {1,-18} -> '{2}'  expected '{3}'" -f $ok, $what, $got, $expect) -ForegroundColor $col
     }
-    Type 0x43 0x2E $false 'ц' 'C'
-    Type 0x43 0x2E $true  'ї' 'AltGr+C'
-    Type 0x42 0x30 $true  'ю' 'AltGr+B'
-    Type 0xBC 0x33 $false ',' 'comma key'
-    [void][Kbd.N]::UnloadKeyboardLayout($hkl)
+    Type 0x43 0x2E $false ([char]0x0446) 'C'
+    Type 0x43 0x2E $true  ([char]0x0457) 'AltGr+C'
+    Type 0x42 0x30 $true  ([char]0x044E) 'AltGr+B'
+    Type 0xBC 0x33 $false ','            'comma key'
 }
