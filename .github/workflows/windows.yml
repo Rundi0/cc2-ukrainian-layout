@@ -41,14 +41,24 @@ jobs:
           set -e
           for arch in amd64 i386; do
             case $arch in
-              amd64) cc=x86_64-w64-mingw32-gcc ;;
-              i386)  cc=i686-w64-mingw32-gcc ;;
+              amd64) cc=x86_64-w64-mingw32-gcc; base=0x180000000 ;;
+              i386)  cc=i686-w64-mingw32-gcc;   base=0x10000000  ;;
             esac
             mkdir -p windows/$arch
             # --entry=0 is ld's way of saying NoEntryPoint: no symbol named
             # "0" exists, so ld parses it as an address. A layout DLL is pure
             # data -- win32k never calls into it.
+            # win32k loads this in kernel mode, so it must look like MSKLC's
+            # output: NATIVE subsystem, fixed image base, no ASLR/NX. A plain
+            # -shared build gives WINDOWS_CUI and the layout is then listed in
+            # Language options but never selectable as an input method.
             $cc -shared -nostdlib -Wl,--entry=0 \
+                -Wl,--subsystem,native \
+                -Wl,--image-base,$base \
+                -Wl,--disable-dynamicbase \
+                -Wl,--disable-nxcompat \
+                -Wl,--disable-high-entropy-va \
+                -Wl,--disable-auto-import \
                 -O2 -Wall -Wextra -Wno-unused \
                 -I windows/src \
                 -o windows/$arch/uacc.dll \
@@ -58,25 +68,8 @@ jobs:
 
       - name: verify the DLLs
         run: |
-          set -e
-          fail=0
-          check() {  # $1=file  $2=expected machine
-            echo "--- $1"
-            file "$1"
-            x86_64-w64-mingw32-objdump -p "$1" > /tmp/hdr.txt
-            grep -q "$2" /tmp/hdr.txt \
-              || { echo "::error::$1: wrong machine, expected $2"; fail=1; }
-            grep -qw "KbdLayerDescriptor" /tmp/hdr.txt \
-              || { echo "::error::$1: KbdLayerDescriptor not exported"; fail=1; }
-            # a layout DLL that imports anything cannot load in win32k
-            if grep -q "DLL Name:" /tmp/hdr.txt; then
-              echo "::error::$1: has imports:"; grep "DLL Name:" /tmp/hdr.txt; fail=1
-            fi
-            grep -A2 "Export Address Table" /tmp/hdr.txt | head -5
-          }
-          check windows/amd64/uacc.dll "pei-x86-64"
-          check windows/i386/uacc.dll  "pei-i386"
-          exit $fail
+          file windows/amd64/uacc.dll windows/i386/uacc.dll
+          python3 windows/src/verify-pe.py windows/amd64/uacc.dll windows/i386/uacc.dll
 
       - name: stamp and commit
         run: |
